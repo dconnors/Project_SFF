@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ultimate SFF Series — Reader Demo</title>
+<link rel="stylesheet" href="../prefdeck/prefdeck.css">
+<link rel="stylesheet" href="../gridreviewer/gridreviewer.css">
+<style>
+  :root {
+    --bg: #0f1116; --panel: #161922; --panel-2: #1d212c; --line: #2a3040;
+    --text: #eef1f7; --muted: #98a1b2; --accent: #6ea8fe;
+    --read: #2fbf71; --unread: #e5484d; --top: #f5b945;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.45;
+  }
+  header {
+    padding: 22px 24px 16px; border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, #12151d, var(--bg));
+  }
+  header h1 { margin: 0; font-size: 22px; }
+  header p { margin: 6px 0 0; color: var(--muted); font-size: 14px; max-width: 760px; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+
+  .tabs { display: flex; gap: 6px; margin-top: 16px; flex-wrap: wrap; }
+  .tab {
+    border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+    border-radius: 99px; padding: 9px 16px; font-size: 13.5px; font-weight: 600; cursor: pointer;
+  }
+  .tab.active { color: var(--text); border-color: var(--accent); background: var(--panel-2); }
+  .tab .n { color: var(--accent); }
+
+  main { padding: 26px 0 80px; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .hint { color: var(--muted); font-size: 13.5px; margin: 0 auto 20px; max-width: 460px; text-align: center; }
+  .kbd { background: var(--panel-2); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; font-size: 12px; }
+
+  /* filter row on Sort tab */
+  .filters { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 18px; }
+  .chip {
+    border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+    border-radius: 99px; padding: 6px 13px; font-size: 12.5px; cursor: pointer;
+  }
+  .chip.on { color: var(--text); border-color: var(--accent); }
+
+  /* Read-marking tab */
+  .series-block { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); margin-bottom: 16px; overflow: hidden; }
+  .series-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .series-head .meta { flex: 1 1 auto; min-width: 0; }
+  .series-head .nm { font-weight: 650; font-size: 16px; }
+  .series-head .au { color: var(--muted); font-size: 13px; }
+  .series-head a { color: var(--accent); text-decoration: none; font-size: 12.5px; white-space: nowrap; }
+  .tag-top { background: rgba(245,185,69,.16); color: var(--top); border: 1px solid var(--top); border-radius: 99px; font-size: 11px; padding: 2px 9px; font-weight: 700; }
+  .books-row { display: flex; gap: 12px; padding: 16px; overflow-x: auto; }
+  .bk { width: 96px; flex: 0 0 auto; text-align: center; cursor: pointer; }
+  .bk .cov {
+    width: 96px; height: 144px; border-radius: 7px; overflow: hidden; position: relative;
+    background: var(--panel-2); border: 3px solid var(--unread);
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color .15s ease, transform .1s ease;
+  }
+  .bk.read .cov { border-color: var(--read); }
+  .bk:hover .cov { transform: translateY(-2px); }
+  .bk .cov img { width: 100%; height: 100%; object-fit: cover; }
+  .bk .cov .ph { font-size: 11px; color: var(--muted); padding: 8px; }
+  .bk .cov .check {
+    position: absolute; top: 5px; right: 5px; width: 22px; height: 22px; border-radius: 99px;
+    background: var(--read); color: #06240f; font-weight: 900; font-size: 14px;
+    display: none; align-items: center; justify-content: center;
+  }
+  .bk.read .cov .check { display: flex; }
+  .award-badge { position: absolute; top: 5px; left: 5px; background: rgba(245,185,69,.94); color: #3a2a05; font-size: 9.5px; font-weight: 700; padding: 2px 6px; border-radius: 99px; max-width: calc(100% - 10px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bk .ttl { font-size: 11.5px; margin-top: 6px; line-height: 1.2; color: var(--text); }
+  .bk .yr { font-size: 11px; color: var(--muted); }
+  .quickrow { padding: 0 16px 14px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .quickrow span { color: var(--muted); font-size: 12px; }
+  .quickrow button { border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 8px; padding: 5px 10px; font-size: 12px; cursor: pointer; }
+
+  .empty { text-align: center; color: var(--muted); padding: 50px 20px; }
+
+  /* Timeline */
+  #timelineCanvas { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 0; }
+  .tl-row { display: flex; align-items: stretch; border-bottom: 1px solid var(--line); }
+  .tl-row:last-child { border-bottom: none; }
+  /* sticky label: stays pinned to the left edge while the track scrolls right */
+  .tl-label { position: sticky; left: 0; flex: 0 0 200px; padding: 12px 14px; background: var(--panel-2); border-right: 1px solid var(--line); z-index: 5; display: flex; flex-direction: column; justify-content: center; }
+  .tl-label .nm { font-weight: 650; font-size: 13.5px; line-height: 1.2; }
+  .tl-label .au { color: var(--muted); font-size: 11.5px; margin-top: 3px; }
+  .tl-track { position: relative; flex: 0 0 auto; }
+  .tl-line { position: absolute; height: 3px; background: var(--line); top: 50%; transform: translateY(-50%); border-radius: 2px; }
+  .tl-book { position: absolute; top: 50%; transform: translate(-50%, -50%); text-align: center; }
+  .tl-book .cov { border-radius: 5px; overflow: hidden; border: 3px solid var(--unread); background: var(--panel); display: flex; align-items: center; justify-content: center; }
+  .tl-book.read .cov { border-color: var(--read); box-shadow: 0 0 10px rgba(47,191,113,.35); }
+  .tl-book .cov img { width: 100%; height: 100%; object-fit: cover; }
+  .tl-book .cov .ph { font-size: 9px; color: var(--muted); padding: 3px; line-height: 1.05; }
+  .tl-book .yr { font-size: 10px; color: var(--muted); margin-top: 3px; }
+  .tl-axis { display: flex; height: 30px; border-top: 1px solid var(--line); }
+  .tl-axis-spacer { position: sticky; left: 0; flex: 0 0 200px; background: var(--panel); border-right: 1px solid var(--line); z-index: 5; }
+  .tl-axis-track { position: relative; flex: 0 0 auto; }
+  .tl-tick { position: absolute; top: 4px; font-size: 11px; color: var(--muted); transform: translateX(-50%); }
+  .tl-tick::before { content: ""; position: absolute; top: -5px; left: 50%; width: 1px; height: 5px; background: var(--line); }
+  /* zoom / export controls */
+  .tl-controls { display: flex; gap: 14px; align-items: center; justify-content: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .tl-controls label { font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .tl-controls input[type=range] { width: 160px; accent-color: var(--accent); }
+  .legend { display: flex; gap: 18px; justify-content: center; margin-bottom: 16px; font-size: 13px; color: var(--muted); }
+  .legend i { display: inline-block; width: 22px; height: 14px; border-radius: 3px; border: 3px solid; vertical-align: middle; margin-right: 6px; }
+  .legend .lr { border-color: var(--read); }
+  .legend .lu { border-color: var(--unread); }
+
+  .toolbar { display: flex; gap: 10px; justify-content: center; margin-bottom: 22px; flex-wrap: wrap; }
+  .btn { border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 9px; padding: 9px 16px; font-size: 13px; cursor: pointer; }
+  .btn:hover { border-color: var(--accent); }
+  .btn-warn:hover { border-color: var(--unread); color: var(--unread); }
+  .stat { color: var(--muted); font-size: 12.5px; text-align: center; margin-bottom: 14px; }
+
+  /* mode switching */
+  .modebar { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .mode-btn { border: 1px solid var(--line); background: var(--panel); color: var(--muted); border-radius: 99px; padding: 9px 16px; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+  .mode-btn.active { color: var(--text); border-color: var(--accent); background: var(--panel-2); }
+  .mode { display: none; }
+  .mode.active { display: block; }
+  .atabs, .tabs { display: flex; gap: 6px; margin: 18px 0 24px; flex-wrap: wrap; }
+  .atab { border: 1px solid var(--line); background: var(--panel); color: var(--muted); border-radius: 99px; padding: 9px 16px; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+  .atab.active { color: var(--text); border-color: var(--accent); background: var(--panel-2); }
+  .atab .n, .tab .n { color: var(--accent); }
+  .aview { display: none; }
+  .aview.active { display: block; }
+
+  /* landing cards */
+  .landing { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 24px; }
+  .land-card { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 22px 20px; cursor: pointer; color: var(--text); transition: transform .1s ease, border-color .15s ease; }
+  .land-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .lc-icon { font-size: 32px; }
+  .lc-title { font-size: 18px; font-weight: 700; margin-top: 10px; }
+  .lc-sub { font-size: 13px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+  .lc-go { margin-top: 14px; color: var(--accent); font-size: 13px; font-weight: 600; }
+
+  /* author read-list per-author block */
+  .author-block { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); margin-bottom: 16px; overflow: hidden; }
+  .author-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .author-head .meta { flex: 1 1 auto; min-width: 0; }
+  .author-head .nm { font-weight: 650; font-size: 16px; }
+  .author-head .kf { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  .author-head a { color: var(--accent); text-decoration: none; font-size: 12.5px; white-space: nowrap; }
+  .author-grid-wrap { padding: 16px; }
+  .author-loading { color: var(--muted); font-size: 13px; padding: 8px 2px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Ultimate SFF — Reader Demo</h1>
+    <p>Three ways to map your science-fiction &amp; fantasy reading: rank the ultimate
+       <strong>series</strong>, or pick the ultimate <strong>authors</strong> in Sci-Fi and Fantasy — then mark what
+       you've read and see it on a publication timeline. Everything runs locally; your picks are saved on this machine.</p>
+    <div class="modebar">
+      <button class="mode-btn active" data-mode="home">Home</button>
+      <button class="mode-btn" data-mode="sf">Sci-Fi Authors</button>
+      <button class="mode-btn" data-mode="fantasy">Fantasy Authors</button>
+      <button class="mode-btn" data-mode="series">Ultimate SFF Series</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- ===================== HOME LANDING ===================== -->
+  <section class="mode active" id="mode-home">
+    <div class="landing">
+      <button class="land-card" data-goto="sf">
+        <div class="lc-icon">🛸</div>
+        <div class="lc-title">Sci-Fi Authors</div>
+        <div class="lc-sub">Pick the ultimate science-fiction authors, mark which of their books you've read, and plot them by year.</div>
+        <div class="lc-go">Start →</div>
+      </button>
+      <button class="land-card" data-goto="fantasy">
+        <div class="lc-icon">🐉</div>
+        <div class="lc-title">Fantasy Authors</div>
+        <div class="lc-sub">Pick the ultimate fantasy authors, mark which of their books you've read, and plot them by year.</div>
+        <div class="lc-go">Start →</div>
+      </button>
+      <button class="land-card" data-goto="series">
+        <div class="lc-icon">📚</div>
+        <div class="lc-title">Ultimate SFF Series</div>
+        <div class="lc-sub">Flag the ultimate multi-book series, mark where you stopped in each, and see them on a timeline.</div>
+        <div class="lc-go">Start →</div>
+      </button>
+    </div>
+  </section>
+
+  <!-- ===================== SERIES MODE ===================== -->
+  <section class="mode" id="mode-series">
+    <div class="tabs">
+      <button class="tab active" data-view="sort">1 · Sort Series <span class="n" id="tabSortN"></span></button>
+      <button class="tab" data-view="read">2 · Mark Books Read <span class="n" id="tabReadN"></span></button>
+      <button class="tab" data-view="timeline">3 · Timeline</button>
+      <button class="tab" data-view="data">Data &amp; Export</button>
+    </div>
+
+    <section class="view active" id="view-sort">
+      <p class="hint">Swipe or use the buttons. <span class="kbd">→</span> Ultimate · <span class="kbd">←</span> Pass · <span class="kbd">↓</span> Skip · <span class="kbd">⌘Z</span> undo. Card shows the first book's cover.</p>
+      <div class="filters" id="genreFilters"></div>
+      <div id="deck"></div>
+    </section>
+
+    <section class="view" id="view-read">
+      <p class="hint">For every series you flagged <span class="tag-top">ULTIMATE</span>, click each cover you've read.
+         A green outline means read; red means not yet — so the last green book is where you stopped.</p>
+      <div id="readList"></div>
+    </section>
+
+    <section class="view" id="view-timeline">
+      <div class="legend">
+        <span><i class="lr"></i>Read</span>
+        <span><i class="lu"></i>Not read</span>
+      </div>
+      <div class="tl-controls">
+        <label>Zoom <input type="range" id="tlZoom" min="6" max="64" step="1" value="46"></label>
+        <button class="btn" id="tlFit">⤢ Fit all</button>
+        <button class="btn" id="tlPng">⬇ Save as image (PNG)</button>
+      </div>
+      <div class="stat" id="tlStat"></div>
+      <div id="timelineCanvas"></div>
+    </section>
+
+    <section class="view" id="view-data">
+      <div class="toolbar">
+        <button class="btn" id="btnExport">⬇ Export my picks (JSON)</button>
+        <button class="btn" id="btnImport">⬆ Import picks</button>
+        <button class="btn btn-warn" id="btnReset">Reset everything</button>
+        <input type="file" id="fileInput" accept="application/json" style="display:none">
+      </div>
+      <div class="stat" id="dataStat"></div>
+      <pre id="dataDump" style="background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;overflow:auto;max-height:520px;font-size:12px;color:var(--muted);"></pre>
+    </section>
+  </section>
+
+  <!-- ===================== AUTHOR MODE (SF & Fantasy) ===================== -->
+  <section class="mode" id="mode-authors">
+    <div class="tabs">
+      <button class="atab active" data-aview="apick">1 · Pick Authors <span class="n" id="atabPickN"></span></button>
+      <button class="atab" data-aview="aread">2 · Mark Books Read <span class="n" id="atabReadN"></span></button>
+      <button class="atab" data-aview="atimeline">3 · Timeline</button>
+      <button class="atab" data-aview="adata">Data &amp; Export</button>
+    </div>
+
+    <section class="aview active" id="view-apick">
+      <p class="hint"><span id="aPickGenre"></span> — swipe or use the buttons. <span class="kbd">→</span> Ultimate · <span class="kbd">←</span> Pass · <span class="kbd">↓</span> Skip. Card shows the author's photo.</p>
+      <div id="authorDeck"></div>
+    </section>
+
+    <section class="aview" id="view-aread">
+      <p class="hint">For each author you flagged <span class="tag-top">ULTIMATE</span>, click every book you've read
+         (green = read). Books load live from OpenLibrary, newest &amp; most-popular first.</p>
+      <div id="authorReadList"></div>
+    </section>
+
+    <section class="aview" id="view-atimeline">
+      <div class="legend"><span><i class="lr"></i>Read</span></div>
+      <div class="tl-controls">
+        <label>Zoom <input type="range" id="atlZoom" min="6" max="64" step="1" value="46"></label>
+        <button class="btn" id="atlFit">⤢ Fit all</button>
+        <button class="btn" id="atlPng">⬇ Save as image (PNG)</button>
+      </div>
+      <p class="hint">Each author is a row; their read books sit at their publication year. Only books you marked read are shown.</p>
+      <div class="stat" id="atlStat"></div>
+      <div id="authorTimelineCanvas"></div>
+    </section>
+
+    <section class="aview" id="view-adata">
+      <div class="toolbar">
+        <button class="btn" id="aExport">⬇ Export author picks (JSON)</button>
+        <button class="btn" id="aImport">⬆ Import picks</button>
+        <button class="btn btn-warn" id="aReset">Reset author picks</button>
+        <input type="file" id="aFileInput" accept="application/json" style="display:none">
+      </div>
+      <div class="stat" id="aDataStat"></div>
+      <pre id="aDataDump" style="background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;overflow:auto;max-height:520px;font-size:12px;color:var(--muted);"></pre>
+    </section>
+  </section>
+</main>
+
+<script src="series_data.js"></script>
+<script src="authors_data.js"></script>
+<script src="awards_data.js"></script>
+<script src="../prefdeck/prefdeck.js"></script>
+<script src="../gridreviewer/gridreviewer.js"></script>
+<script src="timeline.js"></script>
+<script src="unified.js"></script>
+<script src="app.js"></script>
+<script src="authors_app.js"></script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+/* GridReviewer — responsive grid of image cells with a binary toggle.
+   Theme via the CSS variables on .gr-root. */
+.gr-root {
+  --gr-card: #1d212b;
+  --gr-card-2: #232838;
+  --gr-text: #eef1f7;
+  --gr-muted: #9aa3b2;
+  --gr-line: #2c3240;
+  --gr-on: #2fbf71;       /* "selected / read" outline */
+  --gr-off: #e5484d;      /* unselected outline */
+  --gr-cell: 132px;       /* min cell width */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--gr-text);
+}
+.gr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--gr-cell), 1fr));
+  gap: 14px;
+}
+.gr-cell {
+  position: relative;
+  background: var(--gr-card);
+  border: 1px solid var(--gr-line);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform .1s ease, border-color .15s ease;
+}
+.gr-cell:hover { transform: translateY(-2px); border-color: var(--gr-muted); }
+
+.gr-cov {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  background: linear-gradient(160deg, var(--gr-card-2), var(--gr-card));
+  display: flex; align-items: center; justify-content: center;
+  border: 3px solid var(--gr-off);
+  border-radius: 12px 12px 0 0;
+  transition: border-color .15s ease, box-shadow .15s ease;
+  overflow: hidden;
+}
+.gr-on .gr-cov { border-color: var(--gr-on); box-shadow: inset 0 0 0 1px var(--gr-on); }
+.gr-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gr-ph { font-size: 12px; color: var(--gr-muted); text-align: center; padding: 10px; line-height: 1.3; }
+
+.gr-check {
+  position: absolute; top: 7px; right: 7px;
+  min-width: 22px; height: 22px; padding: 0 6px; border-radius: 99px;
+  background: var(--gr-on); color: #06240f; font-weight: 800; font-size: 12px;
+  display: none; align-items: center; justify-content: center;
+}
+.gr-on .gr-check { display: flex; }
+
+.gr-badge {
+  position: absolute; top: 7px; left: 7px;
+  background: rgba(245,185,69,.94); color: #3a2a05;
+  font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px;
+  max-width: calc(100% - 14px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.gr-meta { padding: 9px 11px 11px; }
+.gr-title { font-size: 13px; font-weight: 600; line-height: 1.25; }
+.gr-sub { font-size: 12px; color: var(--gr-muted); margin-top: 2px; }
+.gr-extra { font-size: 11.5px; color: var(--gr-muted); margin-top: 4px; }
+
+.gr-link {
+  position: absolute; bottom: 8px; right: 8px;
+  width: 22px; height: 22px; border-radius: 6px;
+  background: rgba(0,0,0,.45); color: #fff; text-decoration: none;
+  display: flex; align-items: center; justify-content: center; font-size: 12px;
+}
+.gr-link:hover { background: rgba(0,0,0,.7); }
+.gr-empty { text-align: center; color: var(--gr-muted); padding: 40px 20px; }
